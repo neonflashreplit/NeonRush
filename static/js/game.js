@@ -31,6 +31,7 @@ class Game {
         this.neonIntensity = 0;
         this.achievementLevels = [10, 100, 500, 1000, 2000, 5000];
         this.nextAchievementIndex = 0;
+        this.passedObstacles = new Set(); // Track passed obstacles
 
         this.highScore = localStorage.getItem('highScore') || 0;
         document.getElementById('high-score-value').textContent = this.highScore;
@@ -193,6 +194,7 @@ class Game {
         this.currentLane = 1;
         this.nextAchievementIndex = 0;
         this.neonIntensity = 0;
+        this.passedObstacles.clear(); // Clear passed obstacles on restart
         document.getElementById('game-over').classList.add('hidden');
     }
 
@@ -202,31 +204,44 @@ class Game {
         // Smooth player movement
         this.player.x += (this.lanes[this.currentLane] - this.player.x) * 0.2;
 
-        this.score += 0.1 * this.speedMultiplier;
-        this.baseSpeed += 0.001;
-
-        // Check achievements
-        if (this.nextAchievementIndex < this.achievementLevels.length &&
-            this.score >= this.achievementLevels[this.nextAchievementIndex]) {
-            this.showAchievement(this.achievementLevels[this.nextAchievementIndex]);
-            this.nextAchievementIndex++;
-        }
-
         // Update neon intensity based on speed
         this.neonIntensity = Math.sin(Date.now() * 0.003) * 5 + (this.speedMultiplier * 5);
 
-        document.getElementById('score-value').textContent = Math.floor(this.score);
+        this.baseSpeed += 0.001;
+        const currentSpeed = this.baseSpeed * this.speedMultiplier;
+
+        // Check for passed obstacles and update score
+        this.obstacles.forEach(obstacle => {
+            obstacle.y += currentSpeed;
+            // If obstacle passes player and hasn't been counted
+            if (obstacle.y > this.player.y && !this.passedObstacles.has(obstacle)) {
+                this.score += 1;
+                this.passedObstacles.add(obstacle);
+                document.getElementById('score-value').textContent = Math.floor(this.score);
+
+                // Check achievements
+                if (this.nextAchievementIndex < this.achievementLevels.length &&
+                    this.score >= this.achievementLevels[this.nextAchievementIndex]) {
+                    this.showAchievement(this.achievementLevels[this.nextAchievementIndex]);
+                    this.nextAchievementIndex++;
+                }
+            }
+        });
+
+        this.powerups.forEach(powerup => powerup.y += currentSpeed);
+
+        // Clean up off-screen objects and their references
+        this.obstacles = this.obstacles.filter(obstacle => {
+            if (obstacle.y >= this.canvas.height) {
+                this.passedObstacles.delete(obstacle);
+                return false;
+            }
+            return true;
+        });
+        this.powerups = this.powerups.filter(powerup => powerup.y < this.canvas.height);
 
         this.spawnObstacle();
         this.spawnPowerup();
-
-        const currentSpeed = this.baseSpeed * this.speedMultiplier;
-        this.obstacles.forEach(obstacle => obstacle.y += currentSpeed);
-        this.powerups.forEach(powerup => powerup.y += currentSpeed);
-
-        this.obstacles = this.obstacles.filter(obstacle => obstacle.y < this.canvas.height);
-        this.powerups = this.powerups.filter(powerup => powerup.y < this.canvas.height);
-
         this.particles.update();
         this.checkCollisions();
     }

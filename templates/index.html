@@ -7,7 +7,13 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div id="game-container">
+    <div id="intro-screen">
+        <h1>Neon Rush</h1>
+        <p>Use arrow keys or swipe to move between lanes</p>
+        <a href="{{ url_for('index') }}" target="_blank" class="play-button">Play in New Tab</a>
+        <p class="tip">For the best experience, play in a new tab!</p>
+    </div>
+    <div id="game-container" class="hidden">
         <canvas id="gameCanvas"></canvas>
         <div id="ui-overlay">
             <div id="score">Score: <span id="score-value">0</span></div>
@@ -20,6 +26,13 @@
             <button id="retry-button">Retry</button>
         </div>
     </div>
+    <script>
+        // Check if the page is opened in a new tab
+        if (window.opener || window.location.hash === '#game') {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
     <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
     <script src="{{ url_for('static', filename='js/game.js') }}"></script>
